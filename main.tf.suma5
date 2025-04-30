@@ -1,0 +1,67 @@
+terraform {
+ required_version = "1.0.10"
+ required_providers {
+   libvirt = {
+     source = "dmacvicar/libvirt"
+     version = "0.8.1"
+   }
+ }
+}
+
+provider "libvirt" {
+  uri = "qemu:///system"
+}
+
+module "base" {
+  source = "./modules/base"
+
+  // Set SUSE Customer Center credentials here if you have some
+  // cc_username = ""
+  // cc_password = ""
+  product_version = "uyuni-master"
+
+  // optional parameters with defaults below
+  // use_avahi = true
+  // name_prefix = "" // if you use name_prefix, make sure to update the server_configuration for clients/minions below
+  // timezone = "Europe/Berlin"
+  // use_ntp = true
+
+  // provider_settings = {
+  //   network_name = "default" // change to null if you add a bridge below
+  //   additional_network = null
+  //   bridge = null
+  //   pool = "default"
+  // }
+
+  images = ["opensuse155o", "leapmicro55o"]
+}
+
+module "server" {
+  source = "./modules/server_containerized"
+  base_configuration = module.base.configuration
+
+  name = "server"
+  // see modules/server_containerized/variables.tf for possible values
+
+  // connect_to_additional_network = true
+  // if you want to use two networks
+
+  // If you want to run the containers on k3s rather than podman
+  // runtime = "k3s"
+
+  // To override the default container repository containing the images
+  // container_repository = "registry.opensuse.org/systemsmanagement/uyuni/master/servercontainer/containers/uyuni"
+
+  // To define a specific container image tag to install
+  // container_tag = 
+}
+
+module "minion" {
+  source = "./modules/minion"
+  base_configuration = module.base.configuration
+
+  name = "minion"
+  image = "opensuse155o"
+  server_configuration = module.server.configuration
+  // see modules/minion/variables.tf for possible values
+}
